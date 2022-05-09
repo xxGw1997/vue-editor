@@ -1,12 +1,26 @@
 <script setup>
-// This starter template is using Vue 3 <script setup> SFCs
-// Check out https://vuejs.org/api/sfc-script-setup.html#script-setup
+import data from "./data.json";
+import { provide, ref } from "vue";
+import Editor from "./packages/editor";
+import { registerConfig as config } from "@/utils/editor-config";
+
+provide("config", config);
+
+const state = ref(data);
 </script>
 
 <template>
-
+  <div class="app">
+    <Editor v-model="state" />
+  </div>
 </template>
 
-<style>
-
+<style lang="scss">
+.app {
+  position: fixed;
+  top: 20px;
+  left: 20px;
+  right: 20px;
+  bottom: 20px;
+}
 </style>
