@@ -1,17 +1,24 @@
 import { computed, defineComponent, inject, ref } from "vue";
 import "./editor.scss";
 import EditorBlock from "./editor-block";
+import deepcopy from "deepcopy";
+import { useMenuDragger } from "./useMunuDragger";
+import { useFocus } from "./useFocus";
+import { useBlockDragger } from "./useBlockDragger";
 
 export default defineComponent({
   props: {
     modelValue: { type: Object },
   },
-  setup(props) {
+  emits: ["update:modelValue"],
+  setup(props, ctx) {
     const data = computed({
       get() {
         return props.modelValue;
       },
-      set() { },
+      set(newValue) {
+        ctx.emit("update:modelValue", deepcopy(newValue));
+      },
     });
 
     const containerStyles = computed(() => ({
@@ -19,37 +26,33 @@ export default defineComponent({
       height: data.value.container.height + "px",
     }));
 
-    const config = inject('config')
+    const config = inject("config");
 
-    const containerRef = ref(null)
+    const containerRef = ref(null);
 
-    const dragenter = e => {
-      e.dataTransfer.dropEffect = 'move'
-    }
-    const dragover = e => {
-      e.preventDefault()
-    }
-    const dragleave = e => {
-      e.dataTransfer.dropEffect = 'none'
-    }
-    const drop = e => {
-      // e.dataTransfer.dropEffect = 'move'
-    }
+    // 菜单组件拖拽
+    const { dragstart, dragend } = useMenuDragger(containerRef, data);
 
-    const dragstart = (e, component) => {
-      containerRef.value.addEventListener('dragenter', dragenter)
-      containerRef.value.addEventListener('dragover', dragover)
-      containerRef.value.addEventListener('dragleave', dragleave)
-      containerRef.value.addEventListener('drop', drop)
-    }
+    //获取焦点
+    //获取多个组件焦点
+    const { blockMousedown, focusData, containerMousedown } = useFocus(
+      data,
+      (e) => {
+        mousedown(e);
+      }
+    );
+    const { mousedown } = useBlockDragger(focusData);
 
     return () => (
       <div class="editor">
         <div class="editor-left">
-          {config.componentList.map(component => (
-            <div className="editor-left-item"
+          {config.componentList.map((component) => (
+            <div
+              class="editor-left-item"
               draggable
-              ondragstart={e => dragstart(e, component)}>
+              ondragstart={(e) => dragstart(e, component)}
+              ondragend={(e) => dragend}
+            >
               <span>{component.label}</span>
               <div>{component.preview()}</div>
             </div>
@@ -64,11 +67,13 @@ export default defineComponent({
               ref={containerRef}
               style={containerStyles.value}
             >
-              {
-                (data.value.blocks.map((block) => (
-                  <EditorBlock block={block} />
-                )))
-              }
+              {data.value.blocks.map((block) => (
+                <EditorBlock
+                  class={block.focus ? "editor-block-focus" : ""}
+                  block={block}
+                  onMousedown={(e) => blockMousedown(e, block)}
+                />
+              ))}
             </div>
           </div>
         </div>
