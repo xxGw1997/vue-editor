@@ -1,27 +1,9 @@
-import { computed } from "vue";
+import { computed, ref } from "vue";
 
 export function useFocus(data, callback) {
-  const clearOtherBlockFocus = () => {
-    data.value.blocks.forEach((block) => (block.focus = false));
-  };
+  const selectIndex = ref(-1);
 
-  const containerMousedown = () => {
-    clearOtherBlockFocus();
-  };
-
-  const blockMousedown = (e, block) => {
-    e.preventDefault();
-    e.stopPropagation();
-    if (e.ctrlKey) {
-      block.focus = !block.focus;
-    } else {
-      if (!block.focus) {
-        clearOtherBlockFocus();
-        block.focus = true;
-      }
-    }
-    callback(e);
-  };
+  const mouseFocusSelectBlock = computed(()=>data.value.blocks[selectIndex.value])
 
   const focusData = computed(() => {
     let focus = [];
@@ -31,9 +13,39 @@ export function useFocus(data, callback) {
     );
     return { focus, unFocus };
   });
+  const clearOtherBlockFocus = () => {
+    data.value.blocks.forEach((block) => (block.focus = false));
+  };
+
+  const containerMousedown = () => {
+    clearOtherBlockFocus();
+    selectIndex.value = -1
+  };
+
+  const blockMousedown = (e, block, index) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.ctrlKey) {
+      if (focusData.value.focus.length <= 1) {
+        //只有一个节点被选中时,多选时不会切换focus事件
+        block.focus = true
+      } else {
+        block.focus = !block.focus;
+      }
+    } else {
+      if (!block.focus) {
+        clearOtherBlockFocus();
+        block.focus = true;
+      }
+    }
+    selectIndex.value = index;
+    callback(e);
+  };
+
   return {
     blockMousedown,
     containerMousedown,
     focusData,
+    mouseFocusSelectBlock
   };
 }

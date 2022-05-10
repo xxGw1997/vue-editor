@@ -5,6 +5,7 @@ import deepcopy from "deepcopy";
 import { useMenuDragger } from "./useMunuDragger";
 import { useFocus } from "./useFocus";
 import { useBlockDragger } from "./useBlockDragger";
+import { useCommand } from "./useCommand";
 
 export default defineComponent({
   props: {
@@ -35,13 +36,25 @@ export default defineComponent({
 
     //获取焦点
     //获取多个组件焦点
-    const { blockMousedown, focusData, containerMousedown } = useFocus(
-      data,
-      (e) => {
-        mousedown(e);
-      }
+    const {
+      blockMousedown,
+      focusData,
+      containerMousedown,
+      mouseFocusSelectBlock,
+    } = useFocus(data, (e) => {
+      mousedown(e);
+    });
+    const { mousedown, markLine } = useBlockDragger(
+      focusData,
+      mouseFocusSelectBlock,
+      data
     );
-    const { mousedown } = useBlockDragger(focusData);
+
+    const { commands } = useCommand();
+    const buttons = [
+      { label: "撤销", icon: "icon-back", handler: () => commands.undo() },
+      { label: "重做", icon: "icon-forward", handler: () => commands.redo() },
+    ];
 
     return () => (
       <div class="editor">
@@ -58,7 +71,16 @@ export default defineComponent({
             </div>
           ))}
         </div>
-        <div class="editor-top">菜单栏</div>
+        <div class="editor-top">
+          {buttons.map((btn, index) => {
+            return (
+              <div class="editor-top-button" onClick={btn.handler}>
+                <i class={btn.icon}></i>
+                <span>{btn.label}</span>
+              </div>
+            );
+          })}
+        </div>
         <div class="editor-right">属性控制栏目</div>
         <div class="editor-container">
           <div class="editor-container-canvas">
@@ -67,13 +89,19 @@ export default defineComponent({
               ref={containerRef}
               style={containerStyles.value}
             >
-              {data.value.blocks.map((block) => (
+              {data.value.blocks.map((block, index) => (
                 <EditorBlock
                   class={block.focus ? "editor-block-focus" : ""}
                   block={block}
-                  onMousedown={(e) => blockMousedown(e, block)}
+                  onMousedown={(e) => blockMousedown(e, block, index)}
                 />
               ))}
+              {markLine.x !== null && (
+                <div class="line-x" style={{ left: markLine.x + "px" }}></div>
+              )}
+              {markLine.y !== null && (
+                <div class="line-y" style={{ top: markLine.y + "px" }}></div>
+              )}
             </div>
           </div>
         </div>
