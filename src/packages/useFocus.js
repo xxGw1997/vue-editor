@@ -39,7 +39,8 @@ export function useFocus(data, callback) {
       }
     }
     selectIndex.value = index;
-    callback(e);
+    //点击选中block块后执行回调,主要是收集未被选中的block的辅助线以及被选中block的位置信息
+    callback(e); 
   };
 
   return {

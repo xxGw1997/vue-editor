@@ -12,6 +12,7 @@ export function useMenuDragger(containerRef,data){
     }
     const drop = e => {
       let blocks = data.value.blocks
+      //触发更新
       data.value = {
         ...data.value,
         blocks: [

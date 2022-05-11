@@ -44,6 +44,8 @@ export default defineComponent({
     } = useFocus(data, (e) => {
       mousedown(e);
     });
+
+    //渲染组件拖拽
     const { mousedown, markLine } = useBlockDragger(
       focusData,
       mouseFocusSelectBlock,

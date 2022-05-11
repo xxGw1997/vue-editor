@@ -7,6 +7,8 @@ export function useBlockDragger(focusData, mouseFocusSelectBlock, data) {
   };
   let markLine = reactive({ x: null, y: null });
   const mousemove = (e) => {
+    //在移动block时触发, 每次移动时计算拖动的block和未选中的block之间的距离,如果小于5则将该值设置成对应x或y的值,否则为null.
+    // 然后再将选中的block的top值和left进行动态计算 设置为移动后的值.
     let { clientX: moveX, clientY: moveY } = e;
 
     let left = moveX - dragState.startX + dragState.startLeft;
@@ -45,10 +47,14 @@ export function useBlockDragger(focusData, mouseFocusSelectBlock, data) {
   const mouseup = (e) => {
     document.removeEventListener("mousemove", mousemove);
     document.removeEventListener("mouseup", mouseup);
-    markLine.x = null
-    markLine.y = null
+    markLine.x = null;
+    markLine.y = null;
   };
   const mousedown = (e) => {
+    //选中block时将鼠标选中的那个block获取到.然后把对应的x,y,left,top 值获取到,并且将所有选中的block的位置信息记录下来.
+    // 以及动态计算好没有被选中以及画布的该显示的线的值
+    // 最后这个逻辑会被鼠标选中block块时,作为回调执行
+
     const { width: BWidth, height: BHeight } = mouseFocusSelectBlock.value;
 
     dragState = {
