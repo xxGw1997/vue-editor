@@ -14,8 +14,24 @@ export function useCommand(data) {
   const registry = (command) => {
     state.commandArray.push(command);
     state.commands[command.name] = () => {
-      const { cb } = command.execute();
-      cb();
+      if (command.name !== 'drag') {
+        const { cb } = command.execute();
+        cb();
+      } else {
+        const { back, forward } = command.execute()
+        forward()
+        let {queue,current} = state
+
+        if(queue.length > 0){
+          queue = queue.slice(0,current + 1)
+          state.queue = queue
+        }
+
+        queue.push({back,forward})
+        state.current = current + 1
+        
+      }
+
     };
   };
 
@@ -26,7 +42,11 @@ export function useCommand(data) {
       execute() {
         return {
           cb() {
-            console.log("重做");
+            let item = state.queue[state.current + 1]
+            if(item){
+              item.forward && item.forward()
+              state.current++
+            }
           },
         };
       },
@@ -37,7 +57,12 @@ export function useCommand(data) {
       execute() {
         return {
           cb() {
-            console.log("撤销");
+            if(state.current == -1)return 
+            let item = state.queue[state.current]
+            if(item){
+              item.back && item.back()
+              state.current--
+            }
           },
         };
       },
@@ -70,9 +95,6 @@ export function useCommand(data) {
           },
           forward() {
             data.value = { ...data.value, blocks: after };
-          },
-          cb(){
-            console.log('cb');
           }
         };
       },
