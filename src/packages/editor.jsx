@@ -52,10 +52,10 @@ export default defineComponent({
       data
     );
 
-    const { commands } = useCommand();
+    const { commands } = useCommand(data);
     const buttons = [
-      { label: "撤销", icon: "icon-back", handler: () => commands.undo() },
-      { label: "重做", icon: "icon-forward", handler: () => commands.redo() },
+      { label: "撤销", icon: "icon-back", handler: () => commands.back() },
+      { label: "重做", icon: "icon-forward", handler: () => commands.forward() },
     ];
 
     return () => (
@@ -66,7 +66,7 @@ export default defineComponent({
               class="editor-left-item"
               draggable
               ondragstart={(e) => dragstart(e, component)}
-              ondragend={(e) => dragend}
+              ondragend={(e) => dragend(e)}
             >
               <span>{component.label}</span>
               <div>{component.preview()}</div>
