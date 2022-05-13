@@ -2,7 +2,7 @@ import deepcopy from "deepcopy";
 import { onUnmounted } from "vue";
 import { events } from "./events";
 
-export function useCommand(data) {
+export function useCommand(data, focusData) {
   const state = {
     current: -1,
     queue: [],
@@ -14,7 +14,7 @@ export function useCommand(data) {
   const registry = (command) => {
     state.commandArray.push(command);
     state.commands[command.name] = () => {
-      if (command.name !== "drag") {
+      if (["forward", "back"].includes(command.name)) {
         const { cb } = command.execute();
         cb();
       } else {
@@ -87,6 +87,58 @@ export function useCommand(data) {
       execute() {
         let before = this.before;
         let after = data.value.blocks;
+        return {
+          back() {
+            data.value = { ...data.value, blocks: before };
+          },
+          forward() {
+            data.value = { ...data.value, blocks: after };
+          },
+        };
+      },
+    },
+    {
+      name: "placeTop",
+      pushQueue: true,
+      execute() {
+        let before = deepcopy(data.value.blocks);
+        let after = (() => {
+          let { focus, unFocus } = focusData.value;
+          let maxZIndex = unFocus.reduce((prev, block) => {
+            return Math.max(prev, block.zIndex);
+          }, -Infinity);
+          focus.forEach((block) => (block.zIndex = maxZIndex + 1));
+          return data.value.blocks;
+        })();
+        return {
+          back() {
+            data.value = { ...data.value, blocks: before };
+          },
+          forward() {
+            data.value = { ...data.value, blocks: after };
+          },
+        };
+      },
+    },
+    {
+      name: "placeBottom",
+      pushQueue: true,
+      execute() {
+        let before = deepcopy(data.value.blocks);
+        let after = (() => {
+          let { focus, unFocus } = focusData.value;
+          let minZIndex =
+            unFocus.reduce((prev, block) => {
+              return Math.min(prev, block.zIndex);
+            }, Infinity) - 1;
+          if (minZIndex < 0) {
+            const addNum = Math.abs(minZIndex);
+            minZIndex = 0;
+            unFocus.forEach((block) => (block.zIndex += addNum));
+          }
+          focus.forEach((block) => (block.zIndex = minZIndex));
+          return data.value.blocks;
+        })();
         return {
           back() {
             data.value = { ...data.value, blocks: before };
