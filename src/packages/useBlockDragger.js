@@ -1,15 +1,25 @@
 import { reactive } from "vue";
+import { events } from "./events";
 
 export function useBlockDragger(focusData, mouseFocusSelectBlock, data) {
   let dragState = {
     startX: 0,
     startY: 0,
+    dragging: false,
   };
-  let markLine = reactive({ x: null, y: null });
+  let markLine = reactive({
+    x: null,
+    y: null,
+  });
   const mousemove = (e) => {
     //在移动block时触发, 每次移动时计算拖动的block和未选中的block之间的距离,如果小于5则将该值设置成对应x或y的值,否则为null.
     // 然后再将选中的block的top值和left进行动态计算 设置为移动后的值.
     let { clientX: moveX, clientY: moveY } = e;
+
+    if (!dragState.dragging) {
+      dragState.dragging = true;
+      events.emit("start");
+    }
 
     let left = moveX - dragState.startX + dragState.startLeft;
     let top = moveY - dragState.startY + dragState.startTop;
@@ -49,6 +59,9 @@ export function useBlockDragger(focusData, mouseFocusSelectBlock, data) {
     document.removeEventListener("mouseup", mouseup);
     markLine.x = null;
     markLine.y = null;
+    if (dragState.dragging) {
+      events.emit("end");
+    }
   };
   const mousedown = (e) => {
     //选中block时将鼠标选中的那个block获取到.然后把对应的x,y,left,top 值获取到,并且将所有选中的block的位置信息记录下来.
@@ -60,12 +73,19 @@ export function useBlockDragger(focusData, mouseFocusSelectBlock, data) {
     dragState = {
       startX: e.clientX,
       startY: e.clientY,
+      dragging: false,
       startLeft: mouseFocusSelectBlock.value.left,
       startTop: mouseFocusSelectBlock.value.top,
-      startPos: focusData.value.focus.map(({ top, left }) => ({ top, left })),
+      startPos: focusData.value.focus.map(({ top, left }) => ({
+        top,
+        left,
+      })),
       lines: (() => {
         const { unFocus } = focusData.value;
-        let lines = { x: [], y: [] };
+        let lines = {
+          x: [],
+          y: [],
+        };
         [
           ...unFocus,
           {
@@ -81,8 +101,14 @@ export function useBlockDragger(focusData, mouseFocusSelectBlock, data) {
             width: AWidth,
             height: AHeight,
           } = block;
-          lines.y.push({ showTop: ATop, top: ATop });
-          lines.y.push({ showTop: ATop, top: ATop - BHeight });
+          lines.y.push({
+            showTop: ATop,
+            top: ATop,
+          });
+          lines.y.push({
+            showTop: ATop,
+            top: ATop - BHeight,
+          });
           lines.y.push({
             showTop: ATop + AHeight / 2,
             top: ATop + AHeight / 2 - BHeight / 2,
@@ -96,8 +122,14 @@ export function useBlockDragger(focusData, mouseFocusSelectBlock, data) {
             top: ATop + AHeight - BHeight,
           });
 
-          lines.x.push({ showLeft: ALeft, left: ALeft });
-          lines.x.push({ showLeft: ALeft + AWidth, left: ALeft + AWidth });
+          lines.x.push({
+            showLeft: ALeft,
+            left: ALeft,
+          });
+          lines.x.push({
+            showLeft: ALeft + AWidth,
+            left: ALeft + AWidth,
+          });
           lines.x.push({
             showLeft: ALeft + AWidth / 2,
             left: ALeft + AWidth / 2 - BWidth / 2,

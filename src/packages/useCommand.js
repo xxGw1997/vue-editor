@@ -14,24 +14,22 @@ export function useCommand(data) {
   const registry = (command) => {
     state.commandArray.push(command);
     state.commands[command.name] = () => {
-      if (command.name !== 'drag') {
+      if (command.name !== "drag") {
         const { cb } = command.execute();
         cb();
       } else {
-        const { back, forward } = command.execute()
-        forward()
-        let {queue,current} = state
+        const { back, forward } = command.execute();
+        forward();
+        let { queue, current } = state;
 
-        if(queue.length > 0){
-          queue = queue.slice(0,current + 1)
-          state.queue = queue
+        if (queue.length > 0) {
+          queue = queue.slice(0, current + 1);
+          state.queue = queue;
         }
 
-        queue.push({back,forward})
-        state.current = current + 1
-        
+        queue.push({ back, forward });
+        state.current = current + 1;
       }
-
     };
   };
 
@@ -42,10 +40,10 @@ export function useCommand(data) {
       execute() {
         return {
           cb() {
-            let item = state.queue[state.current + 1]
-            if(item){
-              item.forward && item.forward()
-              state.current++
+            let item = state.queue[state.current + 1];
+            if (item) {
+              item.forward && item.forward();
+              state.current++;
             }
           },
         };
@@ -57,11 +55,11 @@ export function useCommand(data) {
       execute() {
         return {
           cb() {
-            if(state.current == -1)return 
-            let item = state.queue[state.current]
-            if(item){
-              item.back && item.back()
-              state.current--
+            if (state.current == -1) return;
+            let item = state.queue[state.current];
+            if (item) {
+              item.back && item.back();
+              state.current--;
             }
           },
         };
@@ -73,11 +71,11 @@ export function useCommand(data) {
       init() {
         this.before = null;
         const start = () => {
-          this.before = deepcopy(data.value.blocks)
+          this.before = deepcopy(data.value.blocks);
         };
         const end = () => {
           state.commands.drag();
-        }
+        };
         events.on("start", start);
         events.on("end", end);
 
@@ -95,7 +93,7 @@ export function useCommand(data) {
           },
           forward() {
             data.value = { ...data.value, blocks: after };
-          }
+          },
         };
       },
     },
@@ -105,7 +103,35 @@ export function useCommand(data) {
     registry(i);
   });
 
+  const keyBoardEvent = (() => {
+    const keyCodes = { 90: "z", 89: "y" };
+    const onKeydown = (e) => {
+      const { ctrlKey, keyCode } = e;
+      let keyString = [];
+      if (ctrlKey) keyString.push("ctrl");
+      keyString.push(keyCodes[keyCode]);
+      keyString = keyString.join("+");
+      const length = state.commandArray.length;
+
+      state.commandArray.find(({ keyboard, name }) => {
+        if (!keyboard) return;
+        if (keyboard === keyString) {
+          state.commands[name]();
+          e.preventDefault();
+        }
+      });
+    };
+
+    return () => {
+      window.addEventListener("keydown", onKeydown);
+      return () => {
+        window.removeEventListener("keydown", onKeydown);
+      };
+    };
+  })();
+
   (() => {
+    state.destroyArray.push(keyBoardEvent());
     state.commandArray.forEach(
       (command) => command.init && state.destroyArray.push(command.init())
     );
@@ -114,7 +140,6 @@ export function useCommand(data) {
   onUnmounted(() => {
     state.destroyArray.forEach((fn) => fn && fn());
   });
-
 
   return state;
 }
