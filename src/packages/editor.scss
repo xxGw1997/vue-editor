@@ -122,6 +122,12 @@
     }
 }
 
+.editor-block-preview{
+    &::after{
+        display: none;
+    }
+}
+
 .line-x {
     position: absolute;
     top: 0;

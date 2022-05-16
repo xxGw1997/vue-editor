@@ -13,6 +13,8 @@ export default defineComponent({
   },
   emits: ["update:modelValue"],
   setup(props, ctx) {
+    const previewRef = ref(false)
+
     const data = computed({
       get() {
         return props.modelValue;
@@ -41,7 +43,8 @@ export default defineComponent({
       focusData,
       containerMousedown,
       mouseFocusSelectBlock,
-    } = useFocus(data, (e) => {
+      clearOtherBlockFocus
+    } = useFocus(data, previewRef, (e) => {
       mousedown(e);
     });
 
@@ -57,7 +60,16 @@ export default defineComponent({
       { label: "撤销", icon: "icon-back", handler: () => commands.back() },
       { label: "重做", icon: "icon-forward", handler: () => commands.forward() },
       { label: "置顶", icon: "icon-place-top", handler: () => commands.placeTop() },
-      { label: "置底", icon: "icon-place-bottom", handler: () => commands.placeBottom() }
+      { label: "置底", icon: "icon-place-bottom", handler: () => commands.placeBottom() },
+      { label: "删除", icon: "icon-delete", handler: () => commands.delete() },
+      {
+        label: () => previewRef.value ? '编辑' : '查看',
+        icon: () => `icon-${previewRef.value ? 'edit' : 'browse'}`,
+        handler: () => {
+          previewRef.value = !previewRef.value
+          clearOtherBlockFocus()
+        }
+      },
     ];
 
     return () => (
@@ -77,10 +89,12 @@ export default defineComponent({
         </div>
         <div class="editor-top">
           {buttons.map((btn, index) => {
+            const icon = typeof btn.icon == 'function' ? btn.icon() : btn.icon
+            const label = typeof btn.label == 'function' ? btn.label() : btn.label
             return (
               <div class="editor-top-button" onClick={btn.handler}>
-                <i class={btn.icon}></i>
-                <span>{btn.label}</span>
+                <i class={icon}></i>
+                <span>{label}</span>
               </div>
             );
           })}
@@ -92,10 +106,12 @@ export default defineComponent({
               class="editor-container-canvas__content"
               ref={containerRef}
               style={containerStyles.value}
+              onMouseDown={containerMousedown}
             >
               {data.value.blocks.map((block, index) => (
                 <EditorBlock
                   class={block.focus ? "editor-block-focus" : ""}
+                  class={previewRef.value ? 'editor-block-preview' : ''}
                   block={block}
                   onMousedown={(e) => blockMousedown(e, block, index)}
                 />

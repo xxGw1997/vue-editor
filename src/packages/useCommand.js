@@ -149,6 +149,24 @@ export function useCommand(data, focusData) {
         };
       },
     },
+    {
+      name: "delete",
+      pushQueue: true,
+      execute() {
+        let state = {
+          before: deepcopy(data.value.blocks),
+          after: focusData.value.unFocus,
+        };
+        return {
+          back() {
+            data.value = { ...data.value, blocks: state.before };
+          },
+          forward() {
+            data.value = { ...data.value, blocks: state.after };
+          },
+        };
+      },
+    },
   ];
 
   commandList.forEach((i) => {
